@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shell - Millyweb Homelab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .terminal-container {
+            background: #0a0a0a;
+            font-family: 'Fira Code', 'Monaco', 'Menlo', monospace;
+        }
+        .terminal-cursor {
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        .hud-overlay {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+        }
+        .hud-item {
+            transition: all 0.3s ease;
+        }
+        .hud-item:hover {
+            background: rgba(59, 130, 246, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-black text-green-400 h-screen overflow-hidden">
+    <!-- HUD Overlay -->
+    <div id="hud-overlay" class="fixed inset-0 z-50 hidden">
+        <div class="hud-overlay h-full flex items-center justify-center">
+            <div class="bg-gray-900 rounded-xl p-8 max-w-4xl w-full mx-4">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-white">System HUD</h2>
+                    <button onclick="toggleHUD()" class="text-gray-400 hover:text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- System Stats -->
+                    <div class="hud-item bg-gray-800 rounded-lg p-4">
+                        <h3 class="text-white font-semibold mb-3">System Stats</h3>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">CPU:</span>
+                                <span class="text-green-400">45%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Memory:</span>
+                                <span class="text-blue-400">62%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Disk:</span>
+                                <span class="text-yellow-400">28%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Network:</span>
+                                <span class="text-purple-400">1.2GB</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Container Status -->
+                    <div class="hud-item bg-gray-800 rounded-lg p-4">
+                        <h3 class="text-white font-semibold mb-3">Containers</h3>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Running:</span>
+                                <span class="text-green-400">12</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Stopped:</span>
+                                <span class="text-red-400">2</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Total:</span>
+                                <span class="text-blue-400">14</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="hud-item bg-gray-800 rounded-lg p-4">
+                        <h3 class="text-white font-semibold mb-3">Quick Actions</h3>
+                        <div class="space-y-2">
+                            <button onclick="executeQuickCommand('docker ps')" class="w-full text-left text-sm py-1 px-2 rounded hover:bg-gray-700 text-gray-300">
+                                Docker PS
+                            </button>
+                            <button onclick="executeQuickCommand('htop')" class="w-full text-left text-sm py-1 px-2 rounded hover:bg-gray-700 text-gray-300">
+                                System Monitor
+                            </button>
+                            <button onclick="executeQuickCommand('df -h')" class="w-full text-left text-sm py-1 px-2 rounded hover:bg-gray-700 text-gray-300">
+                                Disk Usage
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Service Grid -->
+                <div class="mt-6">
+                    <h3 class="text-white font-semibold mb-3">Services</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <button onclick="openService('https://dev.millyweb.com')" class="hud-item bg-blue-600 hover:bg-blue-700 p-3 rounded text-center">
+                            <div class="text-sm font-medium">Dev Hub</div>
+                        </button>
+                        <button onclick="openService('https://workbench.millyweb.com')" class="hud-item bg-green-600 hover:bg-green-700 p-3 rounded text-center">
+                            <div class="text-sm font-medium">Workbench</div>
+                        </button>
+                        <button onclick="openService('https://port.millyweb.com')" class="hud-item bg-orange-600 hover:bg-orange-700 p-3 rounded text-center">
+                            <div class="text-sm font-medium">Portainer</div>
+                        </button>
+                        <button onclick="openService('https://monitoring.millyweb.com')" class="hud-item bg-purple-600 hover:bg-purple-700 p-3 rounded text-center">
+                            <div class="text-sm font-medium">Monitoring</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terminal Header -->
+    <div class="bg-gray-900 border-b border-gray-700 px-4 py-2 flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+            <div class="flex space-x-2">
+                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+            </div>
+            <span class="text-gray-300 font-medium">millyweb@homelab:~</span>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2 text-sm text-gray-400">
+                <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span>Connected</span>
+            </div>
+            <button onclick="toggleHUD()" class="text-gray-400 hover:text-white p-1 rounded">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+            </button>
+            <button onclick="toggleFullscreen()" class="text-gray-400 hover:text-white p-1 rounded">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Terminal Output -->
+    <div id="terminal-output" class="terminal-container flex-1 p-4 overflow-y-auto" style="height: calc(100vh - 120px);">
+        <div class="text-blue-400">
+            ╔═══════════════════════════════════════════════════════════════════════════════╗
+            ║                           🌊 MILLYWEB HOMELAB SHELL                          ║
+            ║                         AI-Powered Development Terminal                       ║
+            ╚═══════════════════════════════════════════════════════════════════════════════╝
+        </div>
+        <div class="mt-4">
+            <div class="text-gray-400">Welcome to Millyweb Homelab Terminal</div>
+            <div class="text-gray-400">Type 'help' for available commands, 'hud' to toggle overlay</div>
+            <div class="text-gray-400">Press Tab for autocomplete, Ctrl+C to interrupt</div>
+        </div>
+        <div class="mt-4">
+            <div class="text-green-400">millyweb@homelab:~$ <span class="terminal-cursor">█</span></div>
+        </div>
+    </div>
+
+    <!-- Terminal Input -->
+    <div class="bg-gray-900 border-t border-gray-700 p-4">
+        <div class="flex items-center">
+            <span class="text-green-400 mr-2">$</span>
+            <input 
+                id="terminal-input" 
+                type="text" 
+                autocomplete="off"
+                spellcheck="false"
+                class="flex-1 bg-transparent text-green-400 outline-none font-mono"
+                placeholder="Enter command..."
+                onkeydown="handleKeydown(event)"
+                autofocus
+            >
+        </div>
+    </div>
+
+    <script>
+        let commandHistory = [];
+        let historyIndex = -1;
+        let currentDirectory = '~';
+        
+        // Built-in commands
+        const commands = {
+            help: () => `
+Available commands:
+  help          - Show this help message
+  clear         - Clear the terminal
+  ls            - List directory contents  
+  pwd           - Print working directory
+  cd [dir]      - Change directory
+  cat [file]    - Display file contents
+  echo [text]   - Echo text to terminal
+  date          - Show current date and time
+  whoami        - Show current user
+  uname         - System information
+  ps            - Show running processes
+  docker        - Docker commands
+  hud           - Toggle system HUD overlay
+  exit          - Close terminal
+            `,
+            clear: () => {
+                document.getElementById('terminal-output').innerHTML = '';
+                return '';
+            },
+            ls: () => `
+total 48
+drwxr-xr-x  12 millyweb millyweb  4096 Sep 17 12:00 .
+drwxr-xr-x   3 root     root      4096 Sep 15 10:30 ..
+-rw-r--r--   1 millyweb millyweb   220 Sep 15 10:30 .bash_logout
+-rw-r--r--   1 millyweb millyweb  3771 Sep 15 10:30 .bashrc
+drwxr-xr-x   2 millyweb millyweb  4096 Sep 17 12:00 homelab
+-rw-r--r--   1 millyweb millyweb   807 Sep 15 10:30 .profile
+drwxr-xr-x   3 millyweb millyweb  4096 Sep 16 14:22 projects
+            `,
+            pwd: () => `/home/millyweb${currentDirectory === '~' ? '' : currentDirectory}`,
+            date: () => new Date().toString(),
+            whoami: () => 'millyweb',
+            uname: () => 'Linux homelab 5.15.0-78-generic #85-Ubuntu SMP x86_64 GNU/Linux',
+            echo: (args) => args.join(' '),
+            cat: (args) => {
+                if (!args.length) return 'cat: missing file operand';
+                const file = args[0];
+                if (file === 'docker-compose.yml') {
+                    return `version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"`;
+                }
+                return `cat: ${file}: No such file or directory`;
+            },
+            ps: () => `
+  PID TTY          TIME CMD
+    1 ?        00:00:01 systemd
+  123 ?        00:00:00 traefik
+  234 ?        00:00:02 postgres
+  345 ?        00:00:01 minio
+  456 ?        00:00:03 ollama
+  567 ?        00:00:00 nginx
+            `,
+            docker: (args) => {
+                if (!args.length) return 'Usage: docker [OPTIONS] COMMAND';
+                if (args[0] === 'ps') {
+                    return `CONTAINER ID   IMAGE                    COMMAND                  CREATED        STATUS        PORTS                    NAMES
+abc123def456   traefik:v3.0            "/entrypoint.sh --ap…"   2 hours ago    Up 2 hours    0.0.0.0:80->80/tcp       traefik
+def456ghi789   postgres:15-alpine      "docker-entrypoint.s…"   2 hours ago    Up 2 hours    5432/tcp                 memory_db
+ghi789jkl012   minio/minio:latest      "/usr/bin/docker-ent…"   2 hours ago    Up 2 hours    9000-9001/tcp            minio_server`;
+                }
+                return `docker: '${args[0]}' is not a docker command.`;
+            },
+            hud: () => {
+                toggleHUD();
+                return 'HUD overlay toggled';
+            },
+            exit: () => {
+                window.close();
+                return 'Goodbye!';
+            }
+        };
+        
+        function handleKeydown(event) {
+            const input = event.target;
+            
+            if (event.key === 'Enter') {
+                const command = input.value.trim();
+                if (command) {
+                    executeCommand(command);
+                    commandHistory.unshift(command);
+                    historyIndex = -1;
+                }
+                input.value = '';
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    input.value = commandHistory[historyIndex];
+                }
+            } else if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    input.value = commandHistory[historyIndex];
+                } else if (historyIndex === 0) {
+                    historyIndex = -1;
+                    input.value = '';
+                }
+            } else if (event.key === 'Tab') {
+                event.preventDefault();
+                // Simple autocomplete for commands
+                const partial = input.value;
+                const matches = Object.keys(commands).filter(cmd => cmd.startsWith(partial));
+                if (matches.length === 1) {
+                    input.value = matches[0];
+                }
+            }
+        }
+        
+        function executeCommand(commandLine) {
+            const output = document.getElementById('terminal-output');
+            
+            // Add command to output
+            const commandDiv = document.createElement('div');
+            commandDiv.innerHTML = `<span class="text-green-400">millyweb@homelab:${currentDirectory}$ </span><span class="text-white">${commandLine}</span>`;
+            output.appendChild(commandDiv);
+            
+            // Parse command and arguments
+            const parts = commandLine.trim().split(/\s+/);
+            const command = parts[0];
+            const args = parts.slice(1);
+            
+            // Execute command
+            let result = '';
+            if (commands[command]) {
+                try {
+                    result = commands[command](args);
+                } catch (error) {
+                    result = `Error: ${error.message}`;
+                }
+            } else {
+                result = `${command}: command not found`;
+            }
+            
+            // Add result to output
+            if (result) {
+                const resultDiv = document.createElement('div');
+                resultDiv.innerHTML = `<pre class="text-gray-300 whitespace-pre-wrap">${result}</pre>`;
+                output.appendChild(resultDiv);
+            }
+            
+            // Add new prompt
+            const promptDiv = document.createElement('div');
+            promptDiv.innerHTML = `<span class="text-green-400">millyweb@homelab:${currentDirectory}$ <span class="terminal-cursor">█</span></span>`;
+            output.appendChild(promptDiv);
+            
+            // Scroll to bottom
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function executeQuickCommand(command) {
+            const input = document.getElementById('terminal-input');
+            input.value = command;
+            executeCommand(command);
+            toggleHUD();
+        }
+        
+        function toggleHUD() {
+            const overlay = document.getElementById('hud-overlay');
+            overlay.classList.toggle('hidden');
+        }
+        
+        function toggleFullscreen() {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                document.documentElement.requestFullscreen();
+            }
+        }
+        
+        function openService(url) {
+            window.open(url, '_blank');
+        }
+        
+        // Initialize terminal
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('terminal-input').focus();
+        });
+        
+        // Handle clicks to refocus input
+        document.addEventListener('click', () => {
+            document.getElementById('terminal-input').focus();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    networks:
+      - traefik_net
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # HTTP/3
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+      - ./dynamic:/etc/traefik/dynamic:ro
+    environment:
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+    command:
+      # Entrypoints
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http3=true
+      # Providers
+      - --providers.docker=true
+      - --providers.docker.network=traefik_net
+      - --providers.docker.exposedbydefault=false
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      # Certificate resolver
+      - --certificatesresolvers.ledns.acme.dnschallenge=true
+      - --certificatesresolvers.ledns.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.ledns.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.ledns.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.ledns.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53
+      # Dashboard (disabled for security)
+      - --api.dashboard=false
+      # Logs
+      - --log.level=INFO
+      - --accesslog=true
+      # Global redirect to HTTPS
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+    labels:
+      - "traefik.enable=false"
+    env_file:
+      - .env
+
+networks:
+  traefik_net:
+    external: true

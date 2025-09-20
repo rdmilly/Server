@@ -1,0 +1,304 @@
+{
+  "folders": [
+    {
+      "name": "🌊 Millyweb Homelab",
+      "path": "."
+    },
+    {
+      "name": "🚦 Traefik Config",
+      "path": "./traefik"
+    },
+    {
+      "name": "🗄️ Memory Layer",
+      "path": "./memory"
+    },
+    {
+      "name": "📦 MinIO Storage",
+      "path": "./minio"
+    },
+    {
+      "name": "🤖 Core LLM",
+      "path": "./core-llm"
+    },
+    {
+      "name": "🕸️ LangGraph App",
+      "path": "./langgraph-app"
+    },
+    {
+      "name": "👁️ Observability",
+      "path": "./observability"
+    },
+    {
+      "name": "📊 Monitoring",
+      "path": "./monitoring"
+    },
+    {
+      "name": "🎯 Dev Hub",
+      "path": "./dev-hub"
+    },
+    {
+      "name": "🛠️ Workbench",
+      "path": "./workbench"
+    },
+    {
+      "name": "🖥️ Unified HUD",
+      "path": "./unified-hud"
+    },
+    {
+      "name": "🏠 Hub Landing",
+      "path": "./hub"
+    },
+    {
+      "name": "🔧 Supporting Services",
+      "path": ".",
+      "type": "virtual",
+      "children": [
+        {
+          "name": "📁 File Browser",
+          "path": "./filebrowser"
+        },
+        {
+          "name": "💻 Terminal",
+          "path": "./tty"
+        },
+        {
+          "name": "⚙️ Automations",
+          "path": "./automations"
+        },
+        {
+          "name": "🐳 Portainer",
+          "path": "./portainer"
+        }
+      ]
+    },
+    {
+      "name": "📜 Scripts",
+      "path": "./scripts"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/.git": true,
+      "**/dist": true,
+      "**/__pycache__": true,
+      "**/*.pyc": true,
+      "**/venv": true,
+      "**/.env": true
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/__pycache__": true
+    },
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    },
+    "python.defaultInterpreterPath": "./langgraph-app/venv/bin/python",
+    "python.formatting.provider": "black",
+    "yaml.schemas": {
+      "https://raw.githubusercontent.com/docker/compose/master/compose/config/compose_spec.json": [
+        "docker-compose.yml",
+        "docker-compose.yaml",
+        "**/docker-compose.yml",
+        "**/docker-compose.yaml"
+      ]
+    },
+    "docker.defaultRegistryPath": "localhost:5000",
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.cwd": "${workspaceFolder}",
+    "git.ignoreLimitWarning": true
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-vscode.docker",
+      "ms-python.python",
+      "ms-python.black-formatter",
+      "redhat.vscode-yaml",
+      "ms-vscode.vscode-json",
+      "bradlc.vscode-tailwindcss",
+      "esbenp.prettier-vscode",
+      "ms-vscode.vscode-typescript-next",
+      "ms-vscode-remote.remote-containers",
+      "ms-vscode-remote.remote-ssh",
+      "GitLab.gitlab-workflow",
+      "github.vscode-pull-request-github",
+      "ms-kubernetes-tools.vscode-kubernetes-tools",
+      "humao.rest-client"
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "🚀 Deploy All Services",
+        "type": "shell",
+        "command": "./scripts/deploy_all.sh",
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "🔧 Initialize Secrets",
+        "type": "shell",
+        "command": "./scripts/init_secrets.sh",
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "📊 View Service Logs",
+        "type": "shell",
+        "command": "docker-compose logs -f",
+        "group": "test",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "🔍 Health Check",
+        "type": "shell",
+        "command": "docker ps --format 'table {{.Names}}\\t{{.Status}}\\t{{.Ports}}'",
+        "group": "test",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "🛑 Stop All Services",
+        "type": "shell",
+        "command": "docker-compose down",
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "🔄 Restart Service",
+        "type": "shell",
+        "command": "docker-compose restart ${input:serviceName}",
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "🐳 Build LangGraph App",
+        "type": "shell",
+        "command": "docker-compose build langgraph-app",
+        "group": "build",
+        "options": {
+          "cwd": "${workspaceFolder}"
+        },
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "🧹 Docker Cleanup",
+        "type": "shell",
+        "command": "docker system prune -f && docker volume prune -f",
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "problemMatcher": []
+      }
+    ],
+    "inputs": [
+      {
+        "id": "serviceName",
+        "description": "Service name to restart",
+        "default": "langgraph-app",
+        "type": "promptString"
+      }
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "🐍 Debug LangGraph App",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/langgraph-app/app/app.py",
+        "console": "integratedTerminal",
+        "cwd": "${workspaceFolder}/langgraph-app",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/langgraph-app/app"
+        },
+        "envFile": "${workspaceFolder}/.env"
+      },
+      {
+        "name": "🧪 Run Tests",
+        "type": "python",
+        "request": "launch",
+        "module": "pytest",
+        "args": [
+          "-v",
+          "tests/"
+        ],
+        "console": "integratedTerminal",
+        "cwd": "${workspaceFolder}/langgraph-app"
+      },
+      {
+        "name": "🔗 Attach to Container",
+        "type": "python",
+        "request": "attach",
+        "connect": {
+          "host": "localhost",
+          "port": 5678
+        },
+        "pathMappings": [
+          {
+            "localRoot": "${workspaceFolder}/langgraph-app",
+            "remoteRoot": "/app"
+          }
+        ]
+      }
+    ]
+  },
+  "compounds": [
+    {
+      "name": "🚀 Full Development Setup",
+      "configurations": [
+        "🐍 Debug LangGraph App"
+      ],
+      "preLaunchTask": "🔧 Initialize Secrets"
+    }
+  ]
+}

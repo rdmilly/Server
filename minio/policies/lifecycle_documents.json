@@ -1,0 +1,25 @@
+{
+  "Rules": [
+    {
+      "ID": "DocumentVersioning",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": ""
+      },
+      "NoncurrentVersionExpiration": {
+        "NoncurrentDays": 30
+      },
+      "AbortIncompleteMultipartUpload": {
+        "DaysAfterInitiation": 7
+      }
+    },
+    {
+      "ID": "KeepRecentVersions",
+      "Status": "Enabled",
+      "NoncurrentVersionTransition": {
+        "NoncurrentDays": 30,
+        "StorageClass": "STANDARD_IA"
+      }
+    }
+  ]
+}

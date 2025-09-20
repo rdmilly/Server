@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: core-llm-ollama
+    restart: unless-stopped
+    networks:
+      - traefik_net
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_ORIGINS=*
+    ports:
+      - "11434"  # Internal only
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    # Uncomment for GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: core-llm-openwebui
+    restart: unless-stopped
+    networks:
+      - traefik_net
+    volumes:
+      - openwebui_data:/app/backend/data
+      - /srv/workspaces:/data/workspace:rw
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-$(openssl rand -base64 32)}
+      - WEBUI_AUTH=False  # Using Cloudflare Access instead
+      - DEFAULT_USER_ROLE=admin
+      - ENABLE_RAG_HYBRID_SEARCH=true
+      - ENABLE_RAG_WEB_LOADER_SSL_VERIFICATION=false
+      - RAG_EMBEDDING_ENGINE=ollama
+      - RAG_EMBEDDING_MODEL=nomic-embed-text:latest
+    depends_on:
+      - ollama
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.openwebui.rule=Host(`openwebui.millyweb.com`)"
+      - "traefik.http.routers.openwebui.entrypoints=websecure"
+      - "traefik.http.routers.openwebui.tls.certresolver=ledns"
+      - "traefik.http.services.openwebui.loadbalancer.server.port=8080"
+
+volumes:
+  ollama_data:
+  openwebui_data:
+
+networks:
+  traefik_net:
+    external: true

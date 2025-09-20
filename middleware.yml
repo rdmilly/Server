@@ -1,0 +1,52 @@
+http:
+  middlewares:
+    default-headers:
+      headers:
+        frameDeny: true
+        sslRedirect: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+        customFrameOptionsValue: SAMEORIGIN
+        customRequestHeaders:
+          X-Forwarded-Proto: https
+
+    secure-headers:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - OPTIONS
+          - PUT
+          - POST
+          - DELETE
+        accessControlMaxAge: 100
+        hostsProxyHeaders:
+          - "X-Forwarded-Host"
+        referrerPolicy: "same-origin"
+
+    # Default catch-all for unknown subdomains
+    default-auth:
+      basicAuth:
+        users:
+          - "admin:$2y$10$..."  # bcrypt hash, change in production
+
+# Routers for default behavior
+  routers:
+    default-router:
+      rule: "HostRegexp(`{subdomain:[a-z0-9-]+}.millyweb.com`)"
+      entrypoints:
+        - websecure
+      service: default-service
+      tls:
+        certResolver: ledns
+      middlewares:
+        - default-headers
+
+  services:
+    default-service:
+      loadBalancer:
+        servers:
+          - url: "https://hub.millyweb.com"

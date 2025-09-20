@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  ttyd:
+    image: tsl0922/ttyd:latest
+    container_name: ttyd-terminal
+    restart: unless-stopped
+    networks:
+      - traefik_net
+    volumes:
+      - /srv/workspaces:/workspaces:rw
+    user: "1000:1000"
+    working_dir: /workspaces
+    command: ["-W", "-p", "7681", "bash", "-lc", "cd /workspaces && bash"]
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ttyd.rule=Host(`term.millyweb.com`)"
+      - "traefik.http.routers.ttyd.entrypoints=websecure"
+      - "traefik.http.routers.ttyd.tls.certresolver=ledns"
+      - "traefik.http.services.ttyd.loadbalancer.server.port=7681"
+
+networks:
+  traefik_net:
+    external: true

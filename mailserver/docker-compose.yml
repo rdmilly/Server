@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # Mailcow - Most Gmail-like experience
+  mailcow:
+    image: mailcow/mailcow:latest
+    container_name: mailcow
+    restart: unless-stopped
+    networks:
+      - traefik_net
+    ports:
+      - "25:25"     # SMTP
+      - "465:465"   # SMTPS  
+      - "587:587"   # Submission
+      - "993:993"   # IMAPS
+      - "995:995"   # POP3S
+    volumes:
+      - mailcow_data:/opt/mailcow-dockerized
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - MAILCOW_HOSTNAME=mail.${DOMAIN:-millyweb.com}
+      - MAILCOW_TZ=UTC
+      - SKIP_LETS_ENCRYPT=y  # Using Traefik for SSL
+      - SKIP_HTTP_VERIFICATION=y
+      - ADDITIONAL_SAN=mail.${DOMAIN:-millyweb.com}
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mailcow.rule=Host(`mail.${DOMAIN:-millyweb.com}`)"
+      - "traefik.http.routers.mailcow.entrypoints=websecure"
+      - "traefik.http.routers.mailcow.tls.certresolver=ledns"
+      - "traefik.http.services.mailcow.loadbalancer.server.port=8080"
+      - "traefik.http.routers.mailcow.middlewares=default-headers"
+
+volumes:
+  mailcow_data:
+
+networks:
+  traefik_net:
+    external: true

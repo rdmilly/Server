@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  langgraph-app:
+    build: .
+    container_name: langgraph-app
+    restart: unless-stopped
+    networks:
+      - traefik_net
+    volumes:
+      - /srv/workspaces:/workspaces:rw
+    environment:
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
+      - LANGFUSE_HOST=${LANGFUSE_HOST}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.langgraph.rule=Host(`agents.millyweb.com`)"
+      - "traefik.http.routers.langgraph.entrypoints=websecure"
+      - "traefik.http.routers.langgraph.tls.certresolver=ledns"
+      - "traefik.http.services.langgraph.loadbalancer.server.port=8000"
+    env_file:
+      - .env
+
+networks:
+  traefik_net:
+    external: true

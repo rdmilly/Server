@@ -1,0 +1,41 @@
+{
+  "Rules": [
+    {
+      "ID": "ExpireArtifacts",
+      "Status": "Enabled",
+      "Filter": {
+        "And": {
+          "Prefix": "",
+          "Tag": {
+            "Key": "retention",
+            "Value": "temporary"
+          }
+        }
+      },
+      "Expiration": {
+        "Days": 90
+      }
+    },
+    {
+      "ID": "KeepPinnedArtifacts",
+      "Status": "Enabled",
+      "Filter": {
+        "Tag": {
+          "Key": "retention",
+          "Value": "pinned"
+        }
+      }
+    },
+    {
+      "ID": "CreateThumbnails",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "images/"
+      },
+      "Transition": {
+        "Days": 1,
+        "StorageClass": "REDUCED_REDUNDANCY"
+      }
+    }
+  ]
+}
